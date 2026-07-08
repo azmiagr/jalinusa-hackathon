@@ -3,9 +3,12 @@ package middleware
 import (
 	"github.com/azmiagr/jalinusa-hackathon/internal/service"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/jwt"
+	"github.com/gin-gonic/gin"
 )
 
 type Interface interface {
+	Cors() gin.HandlerFunc
+	AuthenticateUser(c *gin.Context)
 }
 
 type middleware struct {

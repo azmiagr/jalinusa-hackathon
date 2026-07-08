@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	"github.com/azmiagr/jalinusa-hackathon/entity"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/bcrypt"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/database/mariadb"
 	apperrors "github.com/azmiagr/jalinusa-hackathon/pkg/errors"
@@ -16,6 +17,7 @@ import (
 
 type IUserService interface {
 	Login(param model.UserLoginRequest) (*model.UserLoginResponse, error)
+	GetUser(param model.GetUserParam) (*entity.User, error)
 }
 
 type UserService struct {
@@ -70,4 +72,8 @@ func (s *UserService) Login(param model.UserLoginRequest) (*model.UserLoginRespo
 		Token: token,
 	}, nil
 
+}
+
+func (s *UserService) GetUser(param model.GetUserParam) (*entity.User, error) {
+	return s.userRepo.GetUser(s.db, param)
 }

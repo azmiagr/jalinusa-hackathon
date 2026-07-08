@@ -1,7 +1,10 @@
 package model
 
+import "github.com/google/uuid"
+
 type GetUserParam struct {
-	Username string `json:"-"`
+	UserID   uuid.UUID `json:"-"`
+	Username string    `json:"-"`
 }
 
 type UserLoginRequest struct {
