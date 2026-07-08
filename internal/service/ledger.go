@@ -19,6 +19,8 @@ import (
 type ILedgerService interface {
 	CreateResourceRequest(param model.CreateResourceRequest, postID uuid.UUID) (*model.CreateResourceResponse, error)
 	ConfirmResource(param model.ConfirmResource) (*model.ConfirmResourceResponse, error)
+	GetResourcesList() (*model.ResourceRequestList, error)
+	GetResourceDetail(ledgerID uuid.UUID) (*model.GetResourceDetail, error)
 }
 
 type LedgerService struct {
@@ -183,8 +185,102 @@ func (s *LedgerService) ConfirmResource(param model.ConfirmResource) (*model.Con
 		})
 	}
 
+	err = tx.Commit().Error
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to commit tx")
+	}
+
 	return &model.ConfirmResourceResponse{
 		Resource: itemsResponse,
+	}, nil
+
+}
+
+func (s *LedgerService) GetResourcesList() (*model.ResourceRequestList, error) {
+	var (
+		resourcesResponse []model.ResourceResponse
+		itemsResponse     []model.ItemRequest
+	)
+
+	resources, err := s.ledgerRepo.GetResourceListRequest(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get resources list")
+	}
+
+	for _, r := range resources {
+		resourcesResponse = append(resourcesResponse, model.ResourceResponse{
+			LedgerID: r.LedgerID,
+		})
+
+		items, err := s.itemRepo.GetLedgerItemByLedgerID(s.db, r.LedgerID)
+		if err != nil {
+			return nil, apperrors.InternalServer("failed to get items")
+		}
+
+		for _, i := range items {
+			itemsResponse = append(itemsResponse, model.ItemRequest{
+				Name:     i.Name,
+				Quantity: i.Quantity,
+				Unit:     i.Unit,
+			})
+		}
+
+		post, err := s.postRepo.GetPost(s.db, model.GetPost{
+			PostID: r.PostID,
+		})
+		if err != nil {
+			return nil, apperrors.InternalServer("failed to get posts")
+		}
+
+		distributions, err := s.distributionRepo.GetDistributionsByLedgerID(s.db, r.LedgerID)
+		if err != nil {
+			return nil, apperrors.InternalServer("failed to get distributions")
+		}
+
+		for _, d := range distributions {
+			resourcesResponse = append(resourcesResponse, model.ResourceResponse{
+				PostName:           post.PostName,
+				DistributionCode:   d.Code,
+				DistributionStatus: d.Status,
+				BlockNumber:        r.BlockNumber,
+				Items:              itemsResponse,
+			})
+		}
+	}
+
+	return &model.ResourceRequestList{
+		Resources: resourcesResponse,
+	}, nil
+
+}
+
+func (s *LedgerService) GetResourceDetail(ledgerID uuid.UUID) (*model.GetResourceDetail, error) {
+	var itemsResponse []model.ItemRequest
+
+	items, err := s.itemRepo.GetLedgerItemByLedgerID(s.db, ledgerID)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get items")
+	}
+
+	for _, i := range items {
+		itemsResponse = append(itemsResponse, model.ItemRequest{
+			Name:     i.Name,
+			Quantity: i.Quantity,
+			Unit:     i.Unit,
+		})
+	}
+
+	ledger, err := s.ledgerRepo.GetLedger(s.db, model.GetLedgerParam{
+		LedgerID: ledgerID,
+	})
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get ledger")
+	}
+
+	return &model.GetResourceDetail{
+		Items:      itemsResponse,
+		Status:     "valid",
+		HashLedger: ledger.CurrentHash,
 	}, nil
 
 }
@@ -202,3 +298,40 @@ func buildLedgerHash(ledger *entity.LogisticLedger) string {
 	sum := sha256.Sum256([]byte(payload))
 	return hex.EncodeToString(sum[:])
 }
+
+// func verifyLedgerItems(transactions []entity.LogisticLedger, periodStart, periodEnd time.Time) []model.LedgerAuditItemResponse {
+// 	items := make([]model.LedgerAuditItemResponse, 0)
+// 	expectedPrevHash := genesisTransactionHash
+
+// 	for _, transaction := range transactions {
+// 		expectedCurrentHash := buildTransactionHash(&transaction)
+// 		status := ledgerStatusValid
+// 		reason := ""
+
+// 		if transaction.PrevHash != expectedPrevHash {
+// 			status = ledgerStatusInvalid
+// 			reason = "prev_hash tidak sesuai dengan transaksi sebelumnya"
+// 		} else if transaction.CurrentHash != expectedCurrentHash {
+// 			status = ledgerStatusInvalid
+// 			reason = "current_hash tidak sesuai dengan payload transaksi"
+// 		}
+
+// 		if isInLedgerPeriod(transaction.RecordedAt, periodStart, periodEnd) {
+// 			items = append(items, model.LedgerAuditItemResponse{
+// 				RecordID:      transaction.TransactionID,
+// 				RecordType:    ledgerRecordTypeTransaction,
+// 				Title:         getTransactionTypeLabel(transaction.TransactionType),
+// 				Subtitle:      buildTransactionLedgerSubtitle(transaction),
+// 				Amount:        transaction.Amount,
+// 				RecordedAt:    transaction.RecordedAt,
+// 				PrevHash:      transaction.PrevHash,
+// 				CurrentHash:   transaction.CurrentHash,
+// 				HashPreview:   buildLedgerHashPreview(transaction.CurrentHash),
+// 				Status:        status,
+// 				InvalidReason: reason,
+// 			})
+// 		}
+
+// 		expectedPrevHash = transaction.CurrentHash
+// 	}
+// }

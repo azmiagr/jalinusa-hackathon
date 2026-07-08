@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/azmiagr/jalinusa-hackathon/entity"
+	"github.com/azmiagr/jalinusa-hackathon/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -12,6 +13,8 @@ type ILogisticLedgerRepository interface {
 	CreateLedger(tx *gorm.DB, ledger *entity.LogisticLedger) error
 	GetLatestLedgerForUpdate(tx *gorm.DB, postID uuid.UUID) (*entity.LogisticLedger, error)
 	GetLastLedger(tx *gorm.DB) (*entity.LogisticLedger, error)
+	GetResourceListRequest(tx *gorm.DB) ([]*entity.LogisticLedger, error)
+	GetLedger(tx *gorm.DB, param model.GetLedgerParam) (*entity.LogisticLedger, error)
 }
 
 type LogisticLedgerRepository struct {
@@ -61,6 +64,26 @@ func (r *LogisticLedgerRepository) GetLastLedger(tx *gorm.DB) (*entity.LogisticL
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		return nil, err
+	}
+
+	return &ledger, nil
+}
+
+func (r *LogisticLedgerRepository) GetResourceListRequest(tx *gorm.DB) ([]*entity.LogisticLedger, error) {
+	var ledger []*entity.LogisticLedger
+	err := tx.Debug().Find(&ledger).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return ledger, nil
+}
+
+func (r *LogisticLedgerRepository) GetLedger(tx *gorm.DB, param model.GetLedgerParam) (*entity.LogisticLedger, error) {
+	var ledger entity.LogisticLedger
+	err := tx.Debug().Where(&param).Find(&ledger).Error
+	if err != nil {
 		return nil, err
 	}
 

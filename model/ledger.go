@@ -25,3 +25,26 @@ type ConfirmResource struct {
 type ConfirmResourceResponse struct {
 	Resource []ItemRequest
 }
+
+type ResourceRequestList struct {
+	Resources []ResourceResponse
+}
+
+type ResourceResponse struct {
+	LedgerID           uuid.UUID `json:"ledger_id"`
+	PostName           string    `json:"post_name"`
+	DistributionCode   string    `json:"distribution_code"`
+	DistributionStatus string    `json:"distribution_status"`
+	BlockNumber        string    `json:"block_number"`
+	Items              []ItemRequest
+}
+
+type GetResourceDetail struct {
+	Items      []ItemRequest
+	Status     string `json:"status"`
+	HashLedger string `json:"hash_ledger"`
+}
+
+type GetLedgerParam struct {
+	LedgerID uuid.UUID `json:"ledger_id"`
+}

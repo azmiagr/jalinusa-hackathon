@@ -48,3 +48,30 @@ func (r *Rest) ConfirmResource(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "success to confirm resource", result)
 }
+
+func (r *Rest) GetResourceList(c *gin.Context) {
+	result, err := r.service.LedgerService.GetResourcesList()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get resouces list", result)
+}
+
+func (r *Rest) GetResourceDetails(c *gin.Context) {
+	ledgerID, err := uuid.Parse(c.Param("ledgerID"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid ledger ID", err)
+		return
+	}
+
+	result, err := r.service.LedgerService.GetResourceDetail(ledgerID)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get resource details", result)
+
+}

@@ -43,6 +43,8 @@ func (r *Rest) MountEndpoint() {
 	admin := baseURL.Group("/admin")
 	admin.Use(r.middleware.AuthenticateUser)
 	admin.GET("/posts", r.GetAllPosts)
+	admin.GET("/resources", r.GetResourceList)
+	admin.GET("/resources/:ledgerID", r.GetResourceDetails)
 	admin.POST("/posts", r.CreatePost)
 
 }
