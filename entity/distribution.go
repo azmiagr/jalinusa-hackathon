@@ -1,6 +1,10 @@
 package entity
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Distribution struct {
 	DistributionID uuid.UUID  `json:"distribution_id" gorm:"type:varchar(36);primaryKey"`
@@ -8,4 +12,5 @@ type Distribution struct {
 	UserID         *uuid.UUID `json:"user_id" gorm:"type:varchar(36)"`
 	Status         string     `json:"status" gorm:"type:enum('diajukan', 'diproses', 'pengiriman', 'terdistribusi', 'disetujui')"`
 	Code           string     `json:"code" gorm:"type:varchar(50)"`
+	CreatedAt      time.Time  `json:"created_at" gorm:"autoCreateTime"`
 }

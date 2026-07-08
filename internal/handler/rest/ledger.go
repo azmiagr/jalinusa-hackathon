@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/azmiagr/jalinusa-hackathon/model"
+	"github.com/azmiagr/jalinusa-hackathon/pkg/helper"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -73,5 +74,24 @@ func (r *Rest) GetResourceDetails(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "success to get resource details", result)
+
+}
+
+func (r *Rest) UpdateResourceStatus(c *gin.Context) {
+	userID := helper.GetAuthenticatedUserID(c)
+
+	ledgerID, err := uuid.Parse(c.Param("ledgerID"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid ledger ID", err)
+		return
+	}
+
+	err = r.service.LedgerService.UpdateResourceStatus(ledgerID, userID)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to update status", nil)
 
 }

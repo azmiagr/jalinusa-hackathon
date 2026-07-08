@@ -46,6 +46,7 @@ func (r *Rest) MountEndpoint() {
 	admin.GET("/resources", r.GetResourceList)
 	admin.GET("/resources/:ledgerID", r.GetResourceDetails)
 	admin.POST("/posts", r.CreatePost)
+	admin.PATCH("/resources/:ledgerID", r.UpdateResourceStatus)
 
 }
 

@@ -21,6 +21,7 @@ type ILedgerService interface {
 	ConfirmResource(param model.ConfirmResource) (*model.ConfirmResourceResponse, error)
 	GetResourcesList() (*model.ResourceRequestList, error)
 	GetResourceDetail(ledgerID uuid.UUID) (*model.GetResourceDetail, error)
+	UpdateResourceStatus(ledgerID, userID uuid.UUID) error
 }
 
 type LedgerService struct {
@@ -282,6 +283,51 @@ func (s *LedgerService) GetResourceDetail(ledgerID uuid.UUID) (*model.GetResourc
 		Status:     "valid",
 		HashLedger: ledger.CurrentHash,
 	}, nil
+
+}
+
+func (s *LedgerService) UpdateResourceStatus(ledgerID, userID uuid.UUID) error {
+	tx := s.db.Begin()
+	defer tx.Rollback()
+
+	ledger, err := s.ledgerRepo.GetLedger(tx, model.GetLedgerParam{
+		LedgerID: ledgerID,
+	})
+	if err != nil {
+		return apperrors.InternalServer("failed to get ledger")
+	}
+
+	distribution, err := s.distributionRepo.GetDistribution(tx, model.DistributionParam{
+		LedgerID: ledger.LedgerID,
+	})
+	if err != nil {
+		return apperrors.InternalServer("failed to get distribution")
+	}
+
+	switch distribution.Status {
+	case "diajukan":
+		distribution.Status = "diproses"
+	case "diproses":
+		distribution.Status = "pengiriman"
+	case "pengiriman":
+		distribution.Status = "terdistribusi"
+	case "terdistribusi":
+		return apperrors.BadRequest("must be user that confirm the distribution")
+	}
+
+	distribution.UserID = &userID
+
+	err = s.distributionRepo.UpdateDistribution(tx, distribution)
+	if err != nil {
+		return apperrors.InternalServer("failed to update distribution status")
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return apperrors.InternalServer("failed to commit tx")
+	}
+
+	return nil
 
 }
 
