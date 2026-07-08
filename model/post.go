@@ -39,6 +39,12 @@ type PostsResponse struct {
 	Capacity   int       `json:"capacity"`
 }
 
+type GetPostResponse struct {
+	PostID   uuid.UUID `json:"post_id"`
+	PostCode string    `json:"post_code"`
+	PostName string    `json:"post_name"`
+}
+
 type BindPostRequest struct {
 	Username   string    `json:"username"`
 	Password   string    `json:"password"`

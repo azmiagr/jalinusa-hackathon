@@ -19,6 +19,7 @@ type IPostService interface {
 	CreatePost(param model.CreatePostRequest, userID uuid.UUID) (*model.CreatePostResponse, error)
 	GetAllPosts() (*model.GetAllPosts, error)
 	BindingDevice(param model.BindPostRequest) (*model.BindPostResponse, error)
+	GetPost(postID uuid.UUID) (*model.GetPostResponse, error)
 }
 
 type PostService struct {
@@ -182,6 +183,11 @@ func (s *PostService) BindingDevice(param model.BindPostRequest) (*model.BindPos
 		return nil, apperrors.InternalServer("failed to bind device")
 	}
 
+	err = tx.Commit().Error
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to commit tx")
+	}
+
 	return &model.BindPostResponse{
 		PostID:     post.PostID,
 		Status:     deviceBinding.Status,
@@ -190,4 +196,19 @@ func (s *PostService) BindingDevice(param model.BindPostRequest) (*model.BindPos
 		BountAt:    deviceBinding.BoundAt,
 	}, nil
 
+}
+
+func (s *PostService) GetPost(postID uuid.UUID) (*model.GetPostResponse, error) {
+	post, err := s.postRepo.GetPost(s.db, model.GetPost{
+		PostID: postID,
+	})
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get post detail")
+	}
+
+	return &model.GetPostResponse{
+		PostID:   post.PostID,
+		PostCode: post.PostCode,
+		PostName: post.PostName,
+	}, nil
 }

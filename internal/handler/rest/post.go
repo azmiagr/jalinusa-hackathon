@@ -7,6 +7,7 @@ import (
 	"github.com/azmiagr/jalinusa-hackathon/pkg/helper"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (r *Rest) CreatePost(c *gin.Context) {
@@ -54,4 +55,21 @@ func (r *Rest) BindingDevice(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "success to bind device", result)
+}
+
+func (r *Rest) GetPost(c *gin.Context) {
+	postID, err := uuid.Parse(c.Param("postID"))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid post ID", err)
+		return
+	}
+
+	result, err := r.service.PostService.GetPost(postID)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get post", result)
+
 }

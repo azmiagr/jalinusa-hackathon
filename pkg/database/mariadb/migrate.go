@@ -15,7 +15,6 @@ func Migrate(db *gorm.DB) error {
 		&entity.Device{},
 		&entity.DeviceBinding{},
 		&entity.LogisticLedger{},
-		&entity.Commodity{},
 		&entity.LedgerItem{},
 		&entity.Distribution{},
 	)

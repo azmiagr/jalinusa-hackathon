@@ -33,7 +33,12 @@ func (r *Rest) MountEndpoint() {
 
 	binding := baseURL.Group("/bind")
 	binding.GET("/posts", r.GetAllPosts)
+	binding.GET("/posts/:postID", r.GetPost)
 	binding.POST("/posts", r.BindingDevice)
+
+	resources := baseURL.Group("/resources")
+	resources.POST("/request/:postID", r.CreateResource)
+	resources.POST("/confirm", r.ConfirmResource)
 
 	admin := baseURL.Group("/admin")
 	admin.Use(r.middleware.AuthenticateUser)
