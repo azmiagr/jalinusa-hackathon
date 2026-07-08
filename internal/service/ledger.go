@@ -27,6 +27,7 @@ type ILedgerService interface {
 	GetRequestStatistic() (*model.RequestStatistic, error)
 	GetAuditLog() ([]*model.AuditLogResponse, error)
 	GetPublicLedger() ([]*model.PublicLedger, error)
+	GetDistributionCount() (*model.DistributionPerCategory, error)
 }
 
 type LedgerService struct {
@@ -479,6 +480,51 @@ func (s *LedgerService) GetPublicLedger() ([]*model.PublicLedger, error) {
 	}
 
 	return response, nil
+
+}
+
+func (s *LedgerService) GetDistributionCount() (*model.DistributionPerCategory, error) {
+	defValue := int(100)
+
+	berasCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "Beras / Pangan")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	pakaianCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "Pakaian")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	mandiCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "Peralatan Mandi")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	selimutCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "Selimut")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	susuCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "Susu Bayi")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	p3kCount, err := s.itemRepo.GetTotalQuantityByName(s.db, "P3K")
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count quantity")
+	}
+
+	return &model.DistributionPerCategory{
+		Beras:          berasCount,
+		Pakaian:        pakaianCount,
+		PeralatanMandi: mandiCount,
+		Selimut:        selimutCount,
+		SusuBayi:       susuCount,
+		P3K:            p3kCount,
+		AllStock:       defValue,
+	}, nil
 
 }
 

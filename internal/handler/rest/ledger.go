@@ -135,3 +135,13 @@ func (r *Rest) GetPublicLedger(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "success to get public ledger", result)
 }
+
+func (r *Rest) GetPublicDistributionCount(c *gin.Context) {
+	result, err := r.service.LedgerService.GetDistributionCount()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get distribution count", result)
+}

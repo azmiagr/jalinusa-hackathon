@@ -32,6 +32,7 @@ func (r *Rest) MountEndpoint() {
 	public.GET("/dashboard-statistic", r.PublicDashboardStatistic)
 	public.GET("/audit-logs", r.GetAuditLog)
 	public.GET("/ledgers", r.GetPublicLedger)
+	public.GET("/distribution", r.GetPublicDistributionCount)
 
 	auth := baseURL.Group("/auth")
 	auth.POST("/login", r.Login)

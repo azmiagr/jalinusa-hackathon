@@ -70,3 +70,13 @@ type PublicLedger struct {
 	PrevHash         string `json:"prev_hash"`
 	Status           string `json:"status"`
 }
+
+type DistributionPerCategory struct {
+	Beras          int `json:"beras"`
+	Pakaian        int `json:"pakaiain"`
+	PeralatanMandi int `json:"peralatan_mandi"`
+	Selimut        int `json:"selimut"`
+	SusuBayi       int `json:"susu_bayi"`
+	P3K            int `json:"p3k"`
+	AllStock       int `json:"all_stock"`
+}

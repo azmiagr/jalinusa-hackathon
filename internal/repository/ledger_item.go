@@ -9,6 +9,7 @@ import (
 type ILedgerItemRepository interface {
 	CreateLedgerItem(tx *gorm.DB, item *entity.LedgerItem) error
 	GetLedgerItemByLedgerID(tx *gorm.DB, ledgerID uuid.UUID) ([]*entity.LedgerItem, error)
+	GetTotalQuantityByName(tx *gorm.DB, name string) (int, error)
 }
 
 type LedgerItemRepository struct {
@@ -38,4 +39,19 @@ func (r *LedgerItemRepository) GetLedgerItemByLedgerID(tx *gorm.DB, ledgerID uui
 	}
 
 	return items, nil
+}
+
+func (r *LedgerItemRepository) GetTotalQuantityByName(tx *gorm.DB, name string) (int, error) {
+	var total int
+
+	err := tx.
+		Model(&entity.LedgerItem{}).
+		Select("COALESCE(SUM(quantity), 0)").
+		Where("name = ?", name).
+		Scan(&total).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
