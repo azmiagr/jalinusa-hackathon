@@ -23,5 +23,15 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
+	err = SeedRole(db)
+	if err != nil {
+		return err
+	}
+
+	err = SeedUser(db)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
