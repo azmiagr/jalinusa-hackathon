@@ -115,3 +115,23 @@ func (r *Rest) PublicDashboardStatistic(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "success to get public dashboard statistic", result)
 }
+
+func (r *Rest) GetAuditLog(c *gin.Context) {
+	result, err := r.service.LedgerService.GetAuditLog()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get audit logs", result)
+}
+
+func (r *Rest) GetPublicLedger(c *gin.Context) {
+	result, err := r.service.LedgerService.GetPublicLedger()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get public ledger", result)
+}

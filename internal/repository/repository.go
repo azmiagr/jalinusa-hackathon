@@ -10,6 +10,7 @@ type Repository struct {
 	LogisticLedgerRepository ILogisticLedgerRepository
 	DistributionRepository   IDistributionRepository
 	LedgerItemRepository     ILedgerItemRepository
+	AuditLogRepository       IAuditLogRepository
 }
 
 func NewRepository(db *gorm.DB) *Repository {
@@ -21,5 +22,6 @@ func NewRepository(db *gorm.DB) *Repository {
 		LogisticLedgerRepository: NewLogisticLedgerRepository(db),
 		DistributionRepository:   NewDistributionRepository(db),
 		LedgerItemRepository:     NewLedgerItemRepository(db),
+		AuditLogRepository:       NewAuditLogRepository(db),
 	}
 }

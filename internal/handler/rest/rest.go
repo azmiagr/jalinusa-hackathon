@@ -27,7 +27,11 @@ func NewRest(service *service.Service, middleware middleware.Interface) *Rest {
 func (r *Rest) MountEndpoint() {
 	r.router.Use(r.middleware.Cors())
 	baseURL := r.router.Group("/api/v1")
-	baseURL.GET("/dashboard-statistic", r.PublicDashboardStatistic)
+
+	public := baseURL.Group("/public")
+	public.GET("/dashboard-statistic", r.PublicDashboardStatistic)
+	public.GET("/audit-logs", r.GetAuditLog)
+	public.GET("/ledgers", r.GetPublicLedger)
 
 	auth := baseURL.Group("/auth")
 	auth.POST("/login", r.Login)

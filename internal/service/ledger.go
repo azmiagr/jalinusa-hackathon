@@ -25,6 +25,8 @@ type ILedgerService interface {
 	UpdateResourceStatus(ledgerID, userID uuid.UUID) error
 	PublicDashboardStatistic() (*model.PublicDashboard, error)
 	GetRequestStatistic() (*model.RequestStatistic, error)
+	GetAuditLog() ([]*model.AuditLogResponse, error)
+	GetPublicLedger() ([]*model.PublicLedger, error)
 }
 
 type LedgerService struct {
@@ -34,9 +36,10 @@ type LedgerService struct {
 	itemRepo         repository.ILedgerItemRepository
 	userRepo         repository.IUserRepository
 	postRepo         repository.IPostRepository
+	auditRepo        repository.IAuditLogRepository
 }
 
-func NewLedgerService(ledgerRepo repository.ILogisticLedgerRepository, distributionRepo repository.IDistributionRepository, itemRepo repository.ILedgerItemRepository, userRepo repository.IUserRepository, postRepo repository.IPostRepository) ILedgerService {
+func NewLedgerService(ledgerRepo repository.ILogisticLedgerRepository, distributionRepo repository.IDistributionRepository, itemRepo repository.ILedgerItemRepository, userRepo repository.IUserRepository, postRepo repository.IPostRepository, auditRepo repository.IAuditLogRepository) ILedgerService {
 	return &LedgerService{
 		db:               mariadb.Connection,
 		ledgerRepo:       ledgerRepo,
@@ -44,6 +47,7 @@ func NewLedgerService(ledgerRepo repository.ILogisticLedgerRepository, distribut
 		itemRepo:         itemRepo,
 		userRepo:         userRepo,
 		postRepo:         postRepo,
+		auditRepo:        auditRepo,
 	}
 }
 
@@ -141,6 +145,14 @@ func (s *LedgerService) CreateResourceRequest(param model.CreateResourceRequest,
 		return nil, apperrors.InternalServer("failed to create distribution")
 	}
 
+	audit := &entity.AuditLog{
+		AuditID: uuid.New(),
+		UserID:  nil,
+		Action:  "creating resources request",
+	}
+
+	_ = s.auditRepo.CreateAuditLog(tx, audit)
+
 	err = tx.Commit().Error
 	if err != nil {
 		return nil, apperrors.InternalServer("failed to commit tx")
@@ -188,6 +200,14 @@ func (s *LedgerService) ConfirmResource(param model.ConfirmResource) (*model.Con
 			Unit:     i.Unit,
 		})
 	}
+
+	audit := &entity.AuditLog{
+		AuditID: uuid.New(),
+		UserID:  nil,
+		Action:  "resource confirmed by user",
+	}
+
+	_ = s.auditRepo.CreateAuditLog(tx, audit)
 
 	err = tx.Commit().Error
 	if err != nil {
@@ -325,6 +345,14 @@ func (s *LedgerService) UpdateResourceStatus(ledgerID, userID uuid.UUID) error {
 		return apperrors.InternalServer("failed to update distribution status")
 	}
 
+	audit := &entity.AuditLog{
+		AuditID: uuid.New(),
+		UserID:  &userID,
+		Action:  "updated resource status",
+	}
+
+	_ = s.auditRepo.CreateAuditLog(tx, audit)
+
 	err = tx.Commit().Error
 	if err != nil {
 		return apperrors.InternalServer("failed to commit tx")
@@ -399,6 +427,61 @@ func (s *LedgerService) PublicDashboardStatistic() (*model.PublicDashboard, erro
 
 }
 
+func (s *LedgerService) GetAuditLog() ([]*model.AuditLogResponse, error) {
+	var response []*model.AuditLogResponse
+
+	audits, err := s.auditRepo.GetAllAuditLog(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get audit logs")
+	}
+
+	for _, a := range audits {
+		var userID uuid.UUID
+		if a.UserID != nil {
+			userID = *a.UserID
+		}
+
+		response = append(response, &model.AuditLogResponse{
+			AuditID:   a.AuditID,
+			UserID:    &userID,
+			Action:    a.Action,
+			CreatedAt: a.CreatedAt,
+		})
+	}
+
+	return response, nil
+
+}
+
+func (s *LedgerService) GetPublicLedger() ([]*model.PublicLedger, error) {
+	var response []*model.PublicLedger
+
+	ledgers, err := s.ledgerRepo.GetResourceListRequest(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get ledgers")
+	}
+
+	for _, i := range ledgers {
+		distribution, err := s.distributionRepo.GetDistribution(s.db, model.DistributionParam{
+			LedgerID: i.LedgerID,
+		})
+		if err != nil {
+			return nil, apperrors.InternalServer("failed to get distribution")
+		}
+
+		response = append(response, &model.PublicLedger{
+			BlockNumber:      i.BlockNumber,
+			DistributionCode: distribution.Code,
+			CurrentHash:      i.CurrentHash,
+			PrevHash:         i.PrevHash,
+			Status:           distribution.Status,
+		})
+	}
+
+	return response, nil
+
+}
+
 func buildLedgerHash(ledger *entity.LogisticLedger) string {
 	payload := fmt.Sprintf(
 		"%s|%s|%s|%s|%s",
@@ -416,40 +499,3 @@ func buildLedgerHash(ledger *entity.LogisticLedger) string {
 func roundToTwo(val float64) float64 {
 	return math.Round(val*100) / 100
 }
-
-// func verifyLedgerItems(transactions []entity.LogisticLedger, periodStart, periodEnd time.Time) []model.LedgerAuditItemResponse {
-// 	items := make([]model.LedgerAuditItemResponse, 0)
-// 	expectedPrevHash := genesisTransactionHash
-
-// 	for _, transaction := range transactions {
-// 		expectedCurrentHash := buildTransactionHash(&transaction)
-// 		status := ledgerStatusValid
-// 		reason := ""
-
-// 		if transaction.PrevHash != expectedPrevHash {
-// 			status = ledgerStatusInvalid
-// 			reason = "prev_hash tidak sesuai dengan transaksi sebelumnya"
-// 		} else if transaction.CurrentHash != expectedCurrentHash {
-// 			status = ledgerStatusInvalid
-// 			reason = "current_hash tidak sesuai dengan payload transaksi"
-// 		}
-
-// 		if isInLedgerPeriod(transaction.RecordedAt, periodStart, periodEnd) {
-// 			items = append(items, model.LedgerAuditItemResponse{
-// 				RecordID:      transaction.TransactionID,
-// 				RecordType:    ledgerRecordTypeTransaction,
-// 				Title:         getTransactionTypeLabel(transaction.TransactionType),
-// 				Subtitle:      buildTransactionLedgerSubtitle(transaction),
-// 				Amount:        transaction.Amount,
-// 				RecordedAt:    transaction.RecordedAt,
-// 				PrevHash:      transaction.PrevHash,
-// 				CurrentHash:   transaction.CurrentHash,
-// 				HashPreview:   buildLedgerHashPreview(transaction.CurrentHash),
-// 				Status:        status,
-// 				InvalidReason: reason,
-// 			})
-// 		}
-
-// 		expectedPrevHash = transaction.CurrentHash
-// 	}
-// }

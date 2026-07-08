@@ -62,3 +62,11 @@ type PublicDashboard struct {
 	AidDivertionRate  float64 `json:"aid_divertion_rate"`
 	HashChainValidity string  `json:"hash_chain_validity"`
 }
+
+type PublicLedger struct {
+	BlockNumber      string `json:"block_number"`
+	DistributionCode string `json:"distribution_code"`
+	CurrentHash      string `json:"current_hash"`
+	PrevHash         string `json:"prev_hash"`
+	Status           string `json:"status"`
+}
