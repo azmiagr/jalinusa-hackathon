@@ -2,9 +2,10 @@ package rest
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/azmiagr/jalinusa-hackathon/internal/service"
 	"github.com/azmiagr/jalinusa-hackathon/pkg/middleware"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +25,10 @@ func NewRest(service *service.Service, middleware middleware.Interface) *Rest {
 }
 
 func (r *Rest) MountEndpoint() {
+	baseURL := r.router.Group("/api/v1")
+
+	auth := baseURL.Group("/auth")
+	auth.POST("/login", r.Login)
 
 }
 
