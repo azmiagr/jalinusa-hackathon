@@ -48,3 +48,17 @@ type GetResourceDetail struct {
 type GetLedgerParam struct {
 	LedgerID uuid.UUID `json:"ledger_id"`
 }
+
+type RequestStatistic struct {
+	Submitted    int     `json:"submitted"`
+	Delivered    int     `json:"delivered"`
+	Accepted     int     `json:"accepted"`
+	AidDivertion float64 `json:"aid_divertion"`
+}
+
+type PublicDashboard struct {
+	TotalRequest      int     `json:"total_request"`
+	TotalAccepted     int     `json:"total_accepted"`
+	AidDivertionRate  float64 `json:"aid_divertion_rate"`
+	HashChainValidity string  `json:"hash_chain_validity"`
+}

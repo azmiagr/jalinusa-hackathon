@@ -15,6 +15,11 @@ type IDistributionRepository interface {
 	GetDistribution(tx *gorm.DB, param model.DistributionParam) (*entity.Distribution, error)
 	UpdateDistribution(tx *gorm.DB, distribution *entity.Distribution) error
 	GetDistributionsByLedgerID(tx *gorm.DB, ledgerID uuid.UUID) ([]*entity.Distribution, error)
+	GetSubmittedDistribution(tx *gorm.DB) (int64, error)
+	GetDeliveredDistribution(tx *gorm.DB) (int64, error)
+	GetAcceptedDistribution(tx *gorm.DB) (int64, error)
+	GetUnfinishedDistribution(tx *gorm.DB) (int64, error)
+	GetAllDistributionCount(tx *gorm.DB) (int64, error)
 }
 
 type DistributionRepository struct {
@@ -82,4 +87,54 @@ func (r *DistributionRepository) GetDistributionsByLedgerID(tx *gorm.DB, ledgerI
 	}
 
 	return distribution, nil
+}
+
+func (r *DistributionRepository) GetSubmittedDistribution(tx *gorm.DB) (int64, error) {
+	var count int64
+	err := tx.Debug().Model(&entity.Distribution{}).Where("status = 'diajukan' AND created_at <= INTERVAL 1 HOUR + NOW()").Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *DistributionRepository) GetDeliveredDistribution(tx *gorm.DB) (int64, error) {
+	var count int64
+	err := tx.Debug().Model(&entity.Distribution{}).Where("status = 'pengiriman'").Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *DistributionRepository) GetAcceptedDistribution(tx *gorm.DB) (int64, error) {
+	var count int64
+	err := tx.Debug().Model(&entity.Distribution{}).Where("status = 'diterima'").Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *DistributionRepository) GetUnfinishedDistribution(tx *gorm.DB) (int64, error) {
+	var count int64
+	err := tx.Debug().Model(&entity.Distribution{}).Where("status != 'diterima'").Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *DistributionRepository) GetAllDistributionCount(tx *gorm.DB) (int64, error) {
+	var count int64
+	err := tx.Debug().Model(&entity.Distribution{}).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

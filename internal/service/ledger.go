@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,8 @@ type ILedgerService interface {
 	GetResourcesList() (*model.ResourceRequestList, error)
 	GetResourceDetail(ledgerID uuid.UUID) (*model.GetResourceDetail, error)
 	UpdateResourceStatus(ledgerID, userID uuid.UUID) error
+	PublicDashboardStatistic() (*model.PublicDashboard, error)
+	GetRequestStatistic() (*model.RequestStatistic, error)
 }
 
 type LedgerService struct {
@@ -331,6 +334,71 @@ func (s *LedgerService) UpdateResourceStatus(ledgerID, userID uuid.UUID) error {
 
 }
 
+func (s *LedgerService) GetRequestStatistic() (*model.RequestStatistic, error) {
+	submittedCount, err := s.distributionRepo.GetSubmittedDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count submitted")
+	}
+
+	deliveredCount, err := s.distributionRepo.GetDeliveredDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count delivered")
+	}
+
+	acceptedCount, err := s.distributionRepo.GetAcceptedDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count accepted")
+	}
+
+	unfinishedCount, err := s.distributionRepo.GetUnfinishedDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to unfinished count")
+	}
+
+	totalCount, err := s.distributionRepo.GetAllDistributionCount(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count total distributed")
+	}
+
+	var aidDivertion float64
+	aidDivertion = (float64(unfinishedCount) / float64(totalCount)) * 100
+
+	return &model.RequestStatistic{
+		Submitted:    int(submittedCount),
+		Delivered:    int(deliveredCount),
+		Accepted:     int(acceptedCount),
+		AidDivertion: roundToTwo(aidDivertion),
+	}, nil
+}
+
+func (s *LedgerService) PublicDashboardStatistic() (*model.PublicDashboard, error) {
+	totalCount, err := s.distributionRepo.GetAllDistributionCount(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count total distributed")
+	}
+
+	unfinishedCount, err := s.distributionRepo.GetUnfinishedDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to unfinished count")
+	}
+
+	totalAccepted, err := s.distributionRepo.GetAcceptedDistribution(s.db)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to count total accepted")
+	}
+
+	var aidDivertion float64
+	aidDivertion = (float64(unfinishedCount) / float64(totalCount)) * 100
+
+	return &model.PublicDashboard{
+		TotalRequest:      int(totalCount),
+		TotalAccepted:     int(totalAccepted),
+		AidDivertionRate:  roundToTwo(aidDivertion),
+		HashChainValidity: "valid",
+	}, nil
+
+}
+
 func buildLedgerHash(ledger *entity.LogisticLedger) string {
 	payload := fmt.Sprintf(
 		"%s|%s|%s|%s|%s",
@@ -343,6 +411,10 @@ func buildLedgerHash(ledger *entity.LogisticLedger) string {
 
 	sum := sha256.Sum256([]byte(payload))
 	return hex.EncodeToString(sum[:])
+}
+
+func roundToTwo(val float64) float64 {
+	return math.Round(val*100) / 100
 }
 
 // func verifyLedgerItems(transactions []entity.LogisticLedger, periodStart, periodEnd time.Time) []model.LedgerAuditItemResponse {

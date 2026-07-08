@@ -95,3 +95,23 @@ func (r *Rest) UpdateResourceStatus(c *gin.Context) {
 	response.Success(c, http.StatusOK, "success to update status", nil)
 
 }
+
+func (r *Rest) GetRequestStatistic(c *gin.Context) {
+	result, err := r.service.LedgerService.GetRequestStatistic()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get request statistic", result)
+}
+
+func (r *Rest) PublicDashboardStatistic(c *gin.Context) {
+	result, err := r.service.LedgerService.PublicDashboardStatistic()
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to get public dashboard statistic", result)
+}
