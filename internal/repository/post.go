@@ -38,7 +38,7 @@ func (r *PostRepository) CreatePost(tx *gorm.DB, post *entity.Post) error {
 
 func (r *PostRepository) GetPost(tx *gorm.DB, param model.GetPost) (*entity.Post, error) {
 	var post entity.Post
-	err := tx.Debug().Where(&param).First(post).Error
+	err := tx.Debug().Where(&param).First(&post).Error
 	if err != nil {
 		return nil, err
 	}

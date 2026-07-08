@@ -1,9 +1,14 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type GetPost struct {
-	PostName string `json:"-"`
+	PostID   uuid.UUID `json:"-"`
+	PostName string    `json:"-"`
 }
 
 type CreatePostRequest struct {
@@ -32,4 +37,19 @@ type PostsResponse struct {
 	PostName   string    `json:"post_name"`
 	KioskCount int       `json:"kiosk_count"`
 	Capacity   int       `json:"capacity"`
+}
+
+type BindPostRequest struct {
+	Username   string    `json:"username"`
+	Password   string    `json:"password"`
+	PostID     uuid.UUID `json:"post_id"`
+	DeviceName string    `json:"device_name"`
+}
+
+type BindPostResponse struct {
+	PostID     uuid.UUID `json:"post_id"`
+	Status     string    `json:"status"`
+	DeviceName string    `json:"device_name"`
+	BoundBy    string    `json:"bound_by"`
+	BountAt    time.Time `json:"bount_at"`
 }

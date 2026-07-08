@@ -38,3 +38,20 @@ func (r *Rest) GetAllPosts(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "success to get all posts", result)
 }
+
+func (r *Rest) BindingDevice(c *gin.Context) {
+	var param model.BindPostRequest
+	err := c.ShouldBindJSON(&param)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "failed to bind input", err)
+		return
+	}
+
+	result, err := r.service.PostService.BindingDevice(param)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "success to bind device", result)
+}

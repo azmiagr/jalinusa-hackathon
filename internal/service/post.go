@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,19 +18,22 @@ import (
 type IPostService interface {
 	CreatePost(param model.CreatePostRequest, userID uuid.UUID) (*model.CreatePostResponse, error)
 	GetAllPosts() (*model.GetAllPosts, error)
+	BindingDevice(param model.BindPostRequest) (*model.BindPostResponse, error)
 }
 
 type PostService struct {
-	db       *gorm.DB
-	postRepo repository.IPostRepository
-	userRepo repository.IUserRepository
+	db         *gorm.DB
+	postRepo   repository.IPostRepository
+	userRepo   repository.IUserRepository
+	deviceRepo repository.IDeviceRepository
 }
 
-func NewPostService(postRepo repository.IPostRepository, userRepo repository.IUserRepository) IPostService {
+func NewPostService(postRepo repository.IPostRepository, userRepo repository.IUserRepository, deviceRepo repository.IDeviceRepository) IPostService {
 	return &PostService{
-		db:       mariadb.Connection,
-		postRepo: postRepo,
-		userRepo: userRepo,
+		db:         mariadb.Connection,
+		postRepo:   postRepo,
+		userRepo:   userRepo,
+		deviceRepo: deviceRepo,
 	}
 }
 
@@ -132,4 +136,58 @@ func (s *PostService) GetAllPosts() (*model.GetAllPosts, error) {
 	return &model.GetAllPosts{
 		Posts: post,
 	}, nil
+}
+
+func (s *PostService) BindingDevice(param model.BindPostRequest) (*model.BindPostResponse, error) {
+	tx := s.db.Begin()
+	defer tx.Rollback()
+
+	user, err := s.userRepo.GetUser(tx, model.GetUserParam{
+		Username: param.Username,
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.BadRequest("invalid username or password")
+		}
+		return nil, apperrors.InternalServer("failed to get user")
+	}
+
+	post, err := s.postRepo.GetPost(tx, model.GetPost{
+		PostID: param.PostID,
+	})
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to get post")
+	}
+
+	device := &entity.Device{
+		DeviceID:   uuid.New(),
+		DeviceName: param.DeviceName,
+	}
+
+	deviceBinding := &entity.DeviceBinding{
+		DeviceBindingID: uuid.New(),
+		DeviceID:        device.DeviceID,
+		PostID:          post.PostID,
+		Status:          "success",
+		BoundBy:         user.UserID,
+	}
+
+	_, err = s.deviceRepo.FindOrCreateDevice(tx, device)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to create device")
+	}
+
+	err = s.deviceRepo.CreateDeviceBinding(tx, deviceBinding)
+	if err != nil {
+		return nil, apperrors.InternalServer("failed to bind device")
+	}
+
+	return &model.BindPostResponse{
+		PostID:     post.PostID,
+		Status:     deviceBinding.Status,
+		DeviceName: device.DeviceName,
+		BoundBy:    user.Username,
+		BountAt:    deviceBinding.BoundAt,
+	}, nil
+
 }
